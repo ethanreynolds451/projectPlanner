@@ -1,3 +1,5 @@
+# A starter code from ChatGPT to use as framework for future development
+
 import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
