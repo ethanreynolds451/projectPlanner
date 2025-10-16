@@ -14,19 +14,32 @@ class File:
                 self.db = "tasks.db"
                 self.track = "tracker.csv"
                 self.plan = "planner.csv"
+                self.settings = "settings.json"
         self.filename = Filename()
 
     # Returns the full path to the database file
     def db(self):
-        return self.project + "/" + self.filename.db
+        return os.path.join(self.project, self.filename.db)
 
     # Returns the full path to the tracker file
     def track(self):
-        return self.project + "/" + self.filename.track
+        return os.path.join(self.project, self.filename.track)
 
     # Returns the full path to the planner file
     def plan(self):
-        return self.project + "/" + self.filename.plan   
+        return os.path.join(self.project, self.filename.plan)
+
+    def settings(self):
+        return os.path.join(self.project, self.filename.settings)
+
+
+    def set(self, path):
+        if os.path.exists(path) and ".project" in path:
+            self.project_name = os.path.basename(path).replace(self.extension, "")
+            self.project = path
+            return 1
+        else:
+            return 0
 
     # Opens a file dialog to select or create a project file
     def get(self, root):
