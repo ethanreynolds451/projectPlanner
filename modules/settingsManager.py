@@ -12,8 +12,8 @@ from resources.globalPresets import APP_NAME, APP_AUTHOR
 from resources.globalPresets import defaultSettings
 
 class Settings:
-    def __init__(self, file):
-        self.file = file
+    def __init__(self, parent):
+        self.file = parent.file
         self.system_file = self.get_system_settings_path()
         self.settings = {}
         self.system_settings = {}

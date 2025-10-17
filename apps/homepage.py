@@ -6,23 +6,24 @@ from apps.taskmanager import taskManagerApp
 from modules.settingsManager import settingsManagerWindow
 from modules.fileManager import fileManagerWindow
 
-class MainApp:
-    def __init__(self, root, pref, file, db, csv):
-        self.root = root
-        self.root.title(file.project_name)
-        self.root.geometry("1400x800")
+class HomePage:
+    def __init__(self, parent):
+        # Inherit modules form parent
+        self.root = parent.root
+        self.pref = parent.pref
+        self.file = parent.file
+        self.db = parent.db
+        self.csv = parent.csv
 
-        self.pref = pref
-        self.file = file
-        self.db = db
-        self.csv = csv
+        self.root.title(parent.file.project_name)
+        self.root.geometry("1400x800")
 
         # Layer apps as sub-frames 
 
         # --- Main layout frames ---
-        self.header = tk.Frame(root, bg="lightgray", height=40)
-        self.left = tk.Frame(root, bg="white")
-        self.right = tk.Frame(root, bg="white")
+        self.header = tk.Frame(self.root, bg="lightgray", height=40)
+        self.left = tk.Frame(self.root, bg="white")
+        self.right = tk.Frame(self.root, bg="white")
 
         # Place frames in grid
         self.header.grid(row=0, column=0, columnspan=2, sticky="nsew")
@@ -30,10 +31,10 @@ class MainApp:
         self.right.grid(row=1, column=1, sticky="nsew")
 
         # --- Configure grid weights so resizing works ---
-        root.grid_rowconfigure(0, weight=0)  # header row doesn’t stretch vertically
-        root.grid_rowconfigure(1, weight=1)  # main content area fills space
-        root.grid_columnconfigure(0, weight=1)
-        root.grid_columnconfigure(1, weight=1)
+        self.root.grid_rowconfigure(0, weight=0)  # header row doesn’t stretch vertically
+        self.root.grid_rowconfigure(1, weight=1)  # main content area fills space
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
 
         # --- Add widgets to header ---
         self.fileOpenerLauncher = tk.Button(self.header, text="File", command=self.launch_file_opener)
@@ -93,7 +94,7 @@ class MainApp:
         self.left.grid_columnconfigure(0, weight=1)
 
         # Add apps to frames
-        self.tm = taskManagerApp(self.taskViewer, self.pref, self.file, self.db)
+        self.tm = taskManagerApp(self.taskViewer, self)
 
         # --- Add widgets to right frame ---
 
@@ -108,6 +109,7 @@ class MainApp:
         self.right.grid_rowconfigure(0, weight=1)
         self.right.grid_columnconfigure(0, weight=1)
 
+    def initialize_homepage(self):
         self.load_apps()
     
     def load_apps(self):

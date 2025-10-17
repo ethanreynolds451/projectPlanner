@@ -4,13 +4,13 @@ import time
 import resources.globalPresets
 
 class Database:
-    def __init__(self, pref, file):
-        self.pref = pref
-        self.file = file
+    def __init__(self, parent):
+        self.pref = parent.pref
+        self.file = parent.file
 
-    def init_db(self, pref, file):
-        self.pref = pref       # make sure to update pref and file in case they changed
-        self.file = file
+    def init_db(self, parent):
+        self.pref = parent.pref       # make sure to update pref and file in case they changed
+        self.file = parent.file
         conn = sqlite3.connect(self.file.db())
         cur = conn.cursor()
         cur.execute("""

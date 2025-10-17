@@ -7,16 +7,16 @@ from tkinter import messagebox
 from resources.globalPresets import taskParameters as taskParams
 
 class taskManagerApp:
-    def __init__(self, root, pref, file, db):
-        self.root = root
-        self.pref = pref
-        self.file = file
-        self.db = db
+    def __init__(self, tk_parent, parent):
+        self.root = tk_parent
+        self.pref = parent.pref
+        self.file = parent.file
+        self.db = parent.db
 
         self.checkbox_states = {}  # item_id -> bool
 
         # Task list with scrollbar
-        self.scrollTable = tk.Frame(root)
+        self.scrollTable = tk.Frame(self.root)
         self.scrollTable.grid(row=0, column=0, sticky="nsew")
 
         self.root.grid_rowconfigure(0, weight=1)
@@ -24,7 +24,7 @@ class taskManagerApp:
 
         
         # Buttons
-        btn_frame = tk.Frame(root)
+        btn_frame = tk.Frame(self.root)
         btn_frame.grid(row=1, column=0, sticky="nsew")
 
         tk.Button(btn_frame, text="Add Task", command=self.add_task_popup).pack(side="left")
@@ -32,8 +32,6 @@ class taskManagerApp:
         tk.Button(btn_frame, text="Undo", command=self.undo_archive_task).pack(side="left")
         tk.Button(btn_frame, text="Redo", command=self.redo_archive_task).pack(side="left")
         tk.Button(btn_frame, text="Refresh", command=self.refresh).pack(side="left")
-
-        self.load()
 
     def build_table(self):
         checkbox_size = 15
@@ -198,7 +196,7 @@ class taskManagerApp:
 
 
     def add_task_popup(self):
-        win = tk.Toplevel(self.root)
+        win = tk.Toplevel(self.self.root)
         win.title("Add Task")
 
         tk.Label(win, text="Name:").grid(row=0, column=0)

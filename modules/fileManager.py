@@ -102,10 +102,11 @@ class File:
             except:
                 return returnFail()
 
-    def initialize_file(self, pref, db, csv):
-        pref.load_settings()
+    def initialize_file(self, parent):
+        parent.file = self
+        parent.pref.load_settings()
         # No system settings because this not part of the project file
-        db.init_db(pref, self)                  # initialize the database at the file (creates if not exists) 
+        parent.db.init_db(parent)                  # initialize the database at the file (creates if not exists) 
         # uncomment when csv manager is implemented
         #csv.init_csv()               # initialize the csv(s) at the file (creates if not exists)
     
