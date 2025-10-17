@@ -55,14 +55,8 @@ class File:
                 print("Project creation cancelled.")
                 return 0
 
-            # Create directory with the project "extension"
             project_dir = os.path.join(file_path, dir_name + self.extension)
-            os.makedirs(project_dir, exist_ok=False)
-
-            # Switch to the new project if requested
-            if switch_to_file:
-                self.set(project_dir)
-
+            
             # Prompt for start and end dates (non-blocking modal)
             date_window = tk.Toplevel(root)
             date_window.title("Project Dates")
@@ -78,10 +72,22 @@ class File:
             def save_dates():
                 start_date = start_entry.get().strip()
                 end_date = end_entry.get().strip()
-                # TODO: Save to project settings file or DB here
+                if not datetime.strptime(start_date, "%Y-%m-%d") or not datetime.strptime(end_date, "%Y-%m-%d"):
+                    messagebox.showerror("Error", "Please enter valid dates in YYYY-MM-DD format.")
+                    return
+                if datetime.strptime(end_date, "%Y-%m-%d") < datetime.strptime(start_date, "%Y-%m-%d"):
+                    messagebox.showerror("Error", "End date cannot be before start date.")
+                    return
+                self.pref.update_project_setting("project_start_date", start_date)
+                self.pref.update_project_setting("project_end_date", end_date)
+                os.makedirs(project_dir, exist_ok=False)
+                if switch_to_file:
+                    self.set(project_dir)
+                self.initialize_file(self)
                 print(f"Project created at {project_dir}")
                 print(f"Start: {start_date}, End: {end_date}")
                 date_window.destroy()
+                
 
             tk.Button(date_window, text="Save", command=save_dates).grid(row=2, column=0, columnspan=2, pady=8)
 
@@ -151,8 +157,7 @@ class File:
         parent.pref.load_settings()
         # No system settings because this not part of the project file
         parent.db.init_db(parent)                  # initialize the database at the file (creates if not exists) 
-        # uncomment when csv manager is implemented
-        #csv.init_csv()               # initialize the csv(s) at the file (creates if not exists)
+        parent.csv.init_csv()               # initialize the csv(s) at the file (creates if not exists)
     
 
 class fileManagerWindow:
