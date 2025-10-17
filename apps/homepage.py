@@ -1,9 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from apps.taskmanager import taskManagerApp as tm
+from apps.taskmanager import taskManagerApp
 
-from modules.settingsManager import settingsManagerApp
+from modules.settingsManager import settingsManagerWindow
+from modules.fileManager import fileManagerWindow
 
 class MainApp:
     def __init__(self, root, pref, file, db, csv):
@@ -15,8 +16,6 @@ class MainApp:
         self.file = file
         self.db = db
         self.csv = csv
-
-        self.pref.load_settings()
 
         # Layer apps as sub-frames 
 
@@ -94,8 +93,7 @@ class MainApp:
         self.left.grid_columnconfigure(0, weight=1)
 
         # Add apps to frames
-        tm(self.taskViewer, self.pref, self.file, self.db)
-       
+        self.tm = taskManagerApp(self.taskViewer, self.pref, self.file, self.db)
 
         # --- Add widgets to right frame ---
 
@@ -109,18 +107,22 @@ class MainApp:
 
         self.right.grid_rowconfigure(0, weight=1)
         self.right.grid_columnconfigure(0, weight=1)
+
+        self.load_apps()
     
+    def load_apps(self):
+        self.tm.load()
 
     def launch_file_opener(self):
         # placeholder for actual code to launch file opener
-        messagebox.showinfo("File Opener", "File Opener Launched!")
+        fileManagerWindow(self, self.root, self.pref, self.db, self.csv, self.file).launch()
     
     def launch_settings_manager(self):
-        settingsManagerApp(self.root, self.pref, self.file).launch()
+        settingsManagerWindow(self.root, self.pref, self.file).launch()
         
     def launch_file_saver(self):
         # placeholder for actual code to launch file saver
-        messagebox.showinfo("File Saver", "File Saver Launched!")
+        messagebox.showinfo("File Saver", "No need for this because it saves automatically")
 
     def launch_task_manager(self):
         # placeholder for actual code to launch task manager

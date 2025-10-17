@@ -8,7 +8,9 @@ class Database:
         self.pref = pref
         self.file = file
 
-    def init_db(self):
+    def init_db(self, pref, file):
+        self.pref = pref       # make sure to update pref and file in case they changed
+        self.file = file
         conn = sqlite3.connect(self.file.db())
         cur = conn.cursor()
         cur.execute("""
@@ -65,18 +67,52 @@ class Database:
         with sqlite3.connect(self.file.db()) as conn:
             conn.row_factory = sqlite3.Row  # make rows dict-like
             cursor = conn.cursor()
-            cols = ", ".join(columns)
-            cursor.execute(f"SELECT id, {cols} FROM tasks")
+            columns_str = ", ".join(columns)
+            cursor.execute(f"SELECT id, {columns_str} FROM tasks")
             rows = cursor.fetchall()
             return [dict(row) for row in rows]  # convert each Row to dict
 
-    def add_task(self, name, start_date, due_date):
+    def add_task(self, columns, data):
         conn = sqlite3.connect(self.file.db())
         cur = conn.cursor()
-        # columns_str = ", ".join(columns)
-        cur.execute("INSERT INTO tasks (name, start_date_scheduled, due_date) VALUES (?, ?, ?)",
-                    (name, start_date, due_date))
+
+        if "name" in columns:
+            idx = columns.index("name")
+            if not data[idx]:  # empty string or None
+                data[idx] = "Untitled"
+        else: 
+            columns.append("name")
+            data.append("Untitled")
+
+        columns_str = ", ".join(columns)
+        placeholders = ", ".join("?" for _ in data)
+        sql = f"INSERT INTO tasks ({columns_str}) VALUES ({placeholders})"
+        cur.execute(sql, data)
         conn.commit()
+        conn.close()
+
+    def modify_task(self, task_id, columns, data):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        set_clause = ", ".join(f"{col}=?" for col in columns)
+        sql = f"UPDATE tasks SET {set_clause}, date_updated=datetime('now') WHERE id=?"
+        cur.execute(sql, data + [task_id])
+        conn.commit()
+        conn.close()
+
+    def duplicate_task(self, task_id):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM tasks WHERE id=?", (task_id,))
+        row = cur.fetchone()
+        if row:
+            columns = [description[0] for description in cur.description if description[0] != "id"]
+            values = [row[i] for i in range(len(row)) if cur.description[i][0] != "id"]
+            columns_str = ", ".join(columns)
+            placeholders = ", ".join("?" for _ in values)
+            sql = f"INSERT INTO tasks ({columns_str}) VALUES ({placeholders})"
+            cur.execute(sql, values)
+            conn.commit()
         conn.close()
 
     def delete_task(self, task_id):

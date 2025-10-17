@@ -14,20 +14,6 @@ class taskManagerApp:
 
         self.checkbox_states = {}  # item_id -> bool
 
-        checkbox_size = 15
-
-        checked = Image.open("resources/images/checkbox_checked_green.png")
-        unchecked = Image.open("resources/images/checkbox_unchecked.png")
-
-        # Resize to fit row height (keeping aspect ratio)
-        checked = checked.resize((checkbox_size, checkbox_size), Image.LANCZOS)
-        unchecked = unchecked.resize((checkbox_size, checkbox_size), Image.LANCZOS)
-
-        self.checked_img = ImageTk.PhotoImage(checked)
-        self.unchecked_img = ImageTk.PhotoImage(unchecked)
-            
-        self.columns = []
-
         # Task list with scrollbar
         self.scrollTable = tk.Frame(root)
         self.scrollTable.grid(row=0, column=0, sticky="nsew")
@@ -35,71 +21,7 @@ class taskManagerApp:
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
-        def build_table(self):
-            self.get_columns()
-
-            columnNames = [taskParams.title[col] for col in self.columns]
-
-            self.tree = ttk.Treeview(
-                self.scrollTable,
-                columns=[col for col in columnNames if col != "Complete"],  # always hide the value of the checkbox column
-                show="tree headings"  # include #0 for the checkbox
-            )
-
-            self.tree.column("#0", width=checkbox_size, stretch=False, anchor="center")
-            self.tree.heading("#0", text="")  # optional, leave header blank
-
-
-            # Keep references to checkbox images
-            self.tree.checked_images = {
-                "checked": self.checked_img,
-                "unchecked": self.unchecked_img
-            }
-
-            for col in columnNames:
-                if col != "Complete":
-                    self.tree.heading(col, text=col)
-                    self.tree.column(col, anchor="center", stretch=True)
-
-            self.tree.bind("<ButtonRelease-1>", self.on_column_resize)
-            self.apply_column_widths()
-
-            self.tree.grid(row=0, column=0, sticky="nsew")
-            self.vsb = ttk.Scrollbar(self.scrollTable, orient="vertical", command=self.tree.yview)
-            self.hsb = ttk.Scrollbar(self.scrollTable, orient="horizontal", command=self.tree.xview)
-            self.tree.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
-            self.vsb.grid(row=0, column=1, sticky="ns")
-            self.hsb.grid(row=1, column=0, sticky="ew")
-            self.scrollTable.grid_rowconfigure(0, weight=1)
-            self.scrollTable.grid_columnconfigure(0, weight=1)
-
-            # Load tasks from DB and insert into tree
-            self.row_id_map = {}  # Map Treeview item ID → DB row
-            tasks = self.db.fetch_tasks(self.columns)
-            
-            for row in self.db.fetch_tasks(self.columns):
-                task_id = row["id"]
-                complete_val = bool(row[taskParams.key["Complete"]])
-                img = self.checked_img if complete_val else self.unchecked_img
-
-                self.tree.insert(
-                    "",
-                    "end",
-                    iid=str(task_id),
-                    text="",
-                    image=img,
-                    values=[row[col] for col in self.columns if col != taskParams.key["Complete"]]
-                )
-
-                # Store checkbox state
-                self.checkbox_states[str(task_id)] = complete_val
-
-            # Bind click event for toggling
-            self.tree.bind("<Button-1>", self.toggle_complete_checkbox)
-
-
-        build_table(self)
-
+        
         # Buttons
         btn_frame = tk.Frame(root)
         btn_frame.grid(row=1, column=0, sticky="nsew")
@@ -108,7 +30,84 @@ class taskManagerApp:
         tk.Button(btn_frame, text="Delete Task", command=self.delete_selected).pack(side="left")
         tk.Button(btn_frame, text="Refresh", command=self.refresh).pack(side="left")
 
-        self.refresh()
+        self.load()
+
+    def build_table(self):
+        checkbox_size = 15
+
+        # Load checkbox images
+        checked = Image.open("resources/images/checkbox_checked_green.png")
+        unchecked = Image.open("resources/images/checkbox_unchecked.png")
+
+        # Resize to fit row height (keeping aspect ratio)
+        checked = checked.resize((checkbox_size, checkbox_size), Image.LANCZOS)
+        unchecked = unchecked.resize((checkbox_size, checkbox_size), Image.LANCZOS)
+
+        # Convert to PhotoImage
+        self.checked_img = ImageTk.PhotoImage(checked)
+        self.unchecked_img = ImageTk.PhotoImage(unchecked)
+            
+        self.columns = []
+
+        self.get_columns()
+
+        columnNames = [taskParams.title[col] for col in self.columns]
+
+        self.tree = ttk.Treeview(
+            self.scrollTable,
+            columns=[col for col in columnNames if col != "Complete"],  # always hide the value of the checkbox column
+            show="tree headings"  # include #0 for the checkbox
+        )
+
+        self.tree.column("#0", width=2*checkbox_size, stretch=False, anchor="center")
+        self.tree.heading("#0", text="")  # optional, leave header blank
+
+        # Keep references to checkbox images
+        self.tree.checked_images = {
+            "checked": self.checked_img,
+            "unchecked": self.unchecked_img
+        }
+
+        for col in columnNames:
+            if col != "Complete":
+                self.tree.heading(col, text=col)
+                self.tree.column(col, anchor="center", stretch=True)
+
+        self.tree.bind("<ButtonRelease-1>", self.on_column_resize)
+        self.apply_column_widths()
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        self.vsb = ttk.Scrollbar(self.scrollTable, orient="vertical", command=self.tree.yview)
+        self.hsb = ttk.Scrollbar(self.scrollTable, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
+        self.vsb.grid(row=0, column=1, sticky="ns")
+        self.hsb.grid(row=1, column=0, sticky="ew")
+        self.scrollTable.grid_rowconfigure(0, weight=1)
+        self.scrollTable.grid_columnconfigure(0, weight=1)
+
+        # Load tasks from DB and insert into tree
+        self.row_id_map = {}  # Map Treeview item ID → DB row
+        tasks = self.db.fetch_tasks(self.columns)
+        
+        for row in self.db.fetch_tasks(self.columns):
+            task_id = row["id"]
+            complete_val = bool(row[taskParams.key["Complete"]])
+            img = self.checked_img if complete_val else self.unchecked_img
+
+            self.tree.insert(
+                "",
+                "end",
+                iid=str(task_id),
+                text="",
+                image=img,
+                values=[row[col] for col in self.columns if col != taskParams.key["Complete"]]
+            )
+
+            # Store checkbox state
+            self.checkbox_states[str(task_id)] = complete_val
+
+        # Bind click event for toggling
+        self.tree.bind("<Button-1>", self.toggle_complete_checkbox)
 
     def get_columns(self):
         self.columns = []   # reset columns list
@@ -154,9 +153,19 @@ class taskManagerApp:
         if not item_id:
             return
 
+        # Identify the column clicked
         col = self.tree.identify_column(event.x)
-        if not col or int(col.replace("#","")) - 1 != 0:
-            return  # only toggle #0 column
+        if col != "#0":
+            return  # Only respond to clicks in the checkbox column
+
+        # Check if click is inside the image area of #0
+        bbox = self.tree.bbox(item_id, column="#0")
+        if not bbox:
+            return
+        x1, y1, width, height = bbox
+        # Only toggle if click is roughly inside the checkbox image
+        if not (0 <= event.x - x1 <= width and 0 <= event.y - y1 <= height):
+            return
 
         # Toggle stored state
         current_state = self.checkbox_states.get(item_id, False)
@@ -167,9 +176,8 @@ class taskManagerApp:
         new_image = self.checked_img if new_state else self.unchecked_img
         self.tree.item(item_id, image=new_image)
 
-        # Update database if you want
-        # task_id = int(item_id)
-        # self.db.update_task_complete(task_id, new_state)
+        task_id = int(item_id)
+        self.db.modify_task(task_id, ["complete"], [new_state])
 
     def refresh(self):
         for row in self.tree.get_children():
@@ -209,7 +217,9 @@ class taskManagerApp:
             if not name:
                 messagebox.showwarning("Error", "Task must have a name")
                 return
-            self.db.add_task(name, start, due)
+            columns = ["name", "start_date_scheduled", "due_date"]
+            data = [name, start if start else None, due if due else None]
+            self.db.add_task(columns, data)
             self.refresh()
             win.destroy()
 
@@ -222,4 +232,8 @@ class taskManagerApp:
             return
         task_id = self.tree.item(selected[0])["values"][0]
         self.db.delete_task(task_id)
+        self.refresh()
+
+    def load(self): 
+        self.build_table()
         self.refresh()
