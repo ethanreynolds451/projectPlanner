@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, PhotoImage
 from PIL import Image, ImageTk  # Requires Pillow
+from tkinter import messagebox
 
 
 from resources.globalPresets import taskParameters as taskParams
@@ -28,6 +29,8 @@ class taskManagerApp:
 
         tk.Button(btn_frame, text="Add Task", command=self.add_task_popup).pack(side="left")
         tk.Button(btn_frame, text="Delete Task", command=self.delete_selected).pack(side="left")
+        tk.Button(btn_frame, text="Undo", command=self.undo_archive_task).pack(side="left")
+        tk.Button(btn_frame, text="Redo", command=self.redo_archive_task).pack(side="left")
         tk.Button(btn_frame, text="Refresh", command=self.refresh).pack(side="left")
 
         self.load()
@@ -183,7 +186,7 @@ class taskManagerApp:
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        for row in self.db.fetch_tasks(self.columns):
+        for row in self.db.fetch_active_tasks(self.columns):
             task_id = row["id"]
             complete_val = bool(row[taskParams.key["Complete"]])
             img = self.checked_img if complete_val else self.unchecked_img
@@ -225,15 +228,26 @@ class taskManagerApp:
 
         tk.Button(win, text="Save", command=save_task).grid(row=3, column=0, columnspan=2)
 
+    # This does not permanently delete the task from the database, sets it as archived
     def delete_selected(self):
         selected = self.tree.selection()
         if not selected:
             messagebox.showwarning("Error", "No task selected")
             return
-        task_id = self.tree.item(selected[0])["values"][0]
-        self.db.delete_task(task_id)
+
+        # The item iid is the task_id
+        task_id = int(selected[0])
+        self.db.archive_task(task_id)
         self.refresh()
 
+    def undo_archive_task(self):
+        self.db.restore_latest()
+        self.refresh()
+
+    def redo_archive_task(self):
+        self.db.undo_restore_latest()
+        self.refresh() 
+    
     def load(self): 
         self.build_table()
         self.refresh()

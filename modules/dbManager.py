@@ -72,6 +72,11 @@ class Database:
             rows = cursor.fetchall()
             return [dict(row) for row in rows]  # convert each Row to dict
 
+    def fetch_active_tasks(self, columns):
+        tasks = self.fetch_tasks(columns)
+        return [task for task in tasks if not task.get("archived", 0)]
+
+
     def add_task(self, columns, data):
         conn = sqlite3.connect(self.file.db())
         cur = conn.cursor()
@@ -115,7 +120,59 @@ class Database:
             conn.commit()
         conn.close()
 
-    def delete_task(self, task_id):
+    def archive_task(self, task_id):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE tasks 
+            SET archived=1, date_archived=datetime('now'), date_updated=datetime('now') 
+            WHERE id=?
+        """, (task_id,))
+        conn.commit()
+        conn.close()
+
+    def restore_task(self, task_id):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE tasks 
+            SET archived=0, date_archived=NULL, date_updated=datetime('now') 
+            WHERE id=?
+        """, (task_id,))
+        conn.commit()
+        conn.close()
+
+    def restore_latest(self):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id FROM tasks 
+            WHERE archived=1 
+            ORDER BY date_archived DESC 
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        if row:
+            task_id = row[0]
+            self.restore_task(task_id)
+        conn.close()
+
+    def undo_restore_latest(self):
+        conn = sqlite3.connect(self.file.db())
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id FROM tasks 
+            WHERE archived=0 AND date_archived IS NULL 
+            ORDER BY date_updated DESC 
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        if row:
+            task_id = row[0]
+            self.archive_task(task_id)
+        conn.close()
+
+    def permanently_delete_task(self, task_id):
         conn = sqlite3.connect(self.file.db())
         cur = conn.cursor()
         cur.execute("DELETE FROM tasks WHERE id=?", (task_id,))
