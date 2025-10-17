@@ -43,6 +43,63 @@ class File:
         else:
             return 0
 
+    def create_new(self, root, file_path, switch_to_file=True):
+        try:
+            # Ask for project name
+            dir_name = simpledialog.askstring(
+                "New Project",
+                "Enter a name for the new project:",
+                parent=root
+            )
+            if not dir_name:
+                print("Project creation cancelled.")
+                return 0
+
+            # Create directory with the project "extension"
+            project_dir = os.path.join(file_path, dir_name + self.extension)
+            os.makedirs(project_dir, exist_ok=False)
+
+            # Switch to the new project if requested
+            if switch_to_file:
+                self.set(project_dir)
+
+            # Prompt for start and end dates (non-blocking modal)
+            date_window = tk.Toplevel(root)
+            date_window.title("Project Dates")
+
+            tk.Label(date_window, text="Project Start Date (YYYY-MM-DD):").grid(row=0, column=0, padx=5, pady=3)
+            tk.Label(date_window, text="Project End Date (YYYY-MM-DD):").grid(row=1, column=0, padx=5, pady=3)
+
+            start_entry = tk.Entry(date_window)
+            end_entry = tk.Entry(date_window)
+            start_entry.grid(row=0, column=1, padx=5, pady=3)
+            end_entry.grid(row=1, column=1, padx=5, pady=3)
+
+            def save_dates():
+                start_date = start_entry.get().strip()
+                end_date = end_entry.get().strip()
+                # TODO: Save to project settings file or DB here
+                print(f"Project created at {project_dir}")
+                print(f"Start: {start_date}, End: {end_date}")
+                date_window.destroy()
+
+            tk.Button(date_window, text="Save", command=save_dates).grid(row=2, column=0, columnspan=2, pady=8)
+
+            # Make the window modal
+            date_window.grab_set()
+            date_window.wait_window()
+
+        except FileExistsError:
+            messagebox.showerror("Error", "A project with that name already exists.")
+            return 0
+        except Exception as e:
+            print("Failed to create new project:", e)
+            messagebox.showerror("Error", f"Failed to create project:\n{e}")
+            return 0
+
+        return 1
+        
+
     # Opens a file dialog to select or create a project file
     def get(self, root):
         def returnSuccess():
@@ -72,34 +129,21 @@ class File:
         ) 
         # If the user wants to 1 a new project
         if create:
-            try:
-                root.update()
-                dir_name = simpledialog.askstring(
-                    "New Directory",
-                    "Enter a name for the new project:"
-                )
-                file_name = dir_name + self.extension 
-                new_file_path = os.path.join(file_path, file_name)
-                os.makedirs(new_file_path, exist_ok=False)
-                self.project_name = os.path.basename(new_file_path).replace(self.extension, "")
-                self.project = new_file_path
-                return returnSuccess()
-            except:
-                print("failed to create new project") #debug
-                return returnFail()
+            self.create_new(file_path)
         else:
-            # Ask for a directory
-            dir_path = filedialog.askdirectory(
-                title="Select directory to create file"
-            )
-            if not dir_path:
-                return returnFail()
-            try:
-                new_path = os.path.join(dir_path, self.self.proj_default + self.extension)
-                os.makedirs(file_path, exist_ok=False)
-                self.project = file_path
-                return returnSuccess()
-            except:
+        #  No idea what this was doing here in the first place  
+            # # Ask for a directory
+            # dir_path = filedialog.askdirectory(
+            #     title="Select directory to create file"
+            # )
+            # if not dir_path:
+            #     return returnFail()
+            # try:
+            #     new_path = os.path.join(dir_path, self.self.proj_default + self.extension)
+            #     os.makedirs(file_path, exist_ok=False)
+            #     self.project = file_path
+            #     return returnSuccess()
+            # except:
                 return returnFail()
 
     def initialize_file(self, parent):
@@ -155,6 +199,13 @@ class fileManagerWindow:
             command=self.delete_file
         )
         delete_file_button.pack(pady=10)
+
+        create_new_file_button = tk.Button(
+            window, 
+            text="Create New Project File", 
+            command=lambda: self.create_new_file(current_file_label)
+        )
+        create_new_file_button.pack(pady=10)
 
     def select_file(self, label):
         if self.file.get(self.root):
@@ -269,3 +320,14 @@ class fileManagerWindow:
             messagebox.showinfo("Deleted", "Project deleted.")
             self.file.get(self.root)  # Prompt user to select or create a new project file
             self.parent.load_apps()
+
+    def create_new_file(self, label):
+        file_path = filedialog.askdirectory(title="Select directory to create new project file")
+        if self.file.create_new(self.root, file_path, switch_to_file=False):
+            switch = messagebox.askyesno("Switch to New File", "Would you like to switch to the new project file?")
+            if switch: 
+                self.file.set(file_path)
+                tk.messagebox.showinfo("File Created", f"New project file created at: {self.file.project} but has not been activated; restart program to use it (will fix this later).")
+                # NEED TO INITIALIZE FILE HERE
+        else: 
+            messagebox.showinfo("Failed to create file", "There was an error creating the new file")

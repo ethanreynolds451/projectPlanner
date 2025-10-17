@@ -7,9 +7,10 @@ class defaultSettings:
         "saved_file_path": ""
     }
     defaults = {
-        "file": None,
         "date_format": "YYYY-MM-DD",
         "time_format": "12h",
+        "project_start_date": "",
+        "project_end_date": "",
         "task_column_order": {
             "name" : 0,
             "type_" : 1,
