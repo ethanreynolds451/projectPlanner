@@ -1,0 +1,3 @@
+Problem: need to reestablish project dates if settings file gets corrupted, errors later if null (might be other settings too)
+- Initial check
+- Ask for input if null encountered later

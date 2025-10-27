@@ -44,6 +44,8 @@ class Settings:
 
     def load_settings(self):
         self.init_settings()
+        if not self.settings["project_start_date"] or not self.settings["project_end_date"]:
+            self.get_dates()
         self.init_system_settings()
 
     def save_settings(self):
@@ -67,6 +69,25 @@ class Settings:
     def update_system_setting(self, key, value):
         self.system_settings[key] = value
         self.save_system_settings()
+
+    def get_dates(self, start_date=None, end_date=None):
+        if not start_date or not end_date: 
+            
+        if not datetime.strptime(start_date, "%Y-%m-%d") or not datetime.strptime(end_date, "%Y-%m-%d"):
+            messagebox.showerror("Error", "Please enter valid dates in YYYY-MM-DD format.")
+            return
+        if datetime.strptime(end_date, "%Y-%m-%d") < datetime.strptime(start_date, "%Y-%m-%d"):
+            messagebox.showerror("Error", "End date cannot be before start date.")
+            return
+        self.update_project_setting("project_start_date", start_date)
+        self.update_project_setting("project_end_date", end_date)
+        os.makedirs(project_dir, exist_ok=False)
+        if switch_to_file:
+            self.set(project_dir)
+        self.initialize_file(self)
+        print(f"Project created at {project_dir}")
+        print(f"Start: {start_date}, End: {end_date}")
+        date_window.destroy()
 
 
 class settingsManagerWindow:

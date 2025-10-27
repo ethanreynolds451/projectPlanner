@@ -65,13 +65,15 @@ class Csv:
         self.write_file(file_path, header, new_data)
 
     def generate_date_range(self, start_date, end_date):
+        print(f"the start date is {start_date}") # Debug print
+        print(f"the end date is {end_date}")   # Debug print
         from datetime import datetime, timedelta
-        start = datetime.strptime(start_date, "%Y-%m-%d").date()
-        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+        start = datetime.strptime(start_date, self.pref.settings["date_format"]).date()
+        end = datetime.strptime(end_date, self.pref.settings["date_format"]).date()
         date_list = []
         current_date = start
         while current_date <= end:
-            date_list.append(current_date.strftime("%Y-%m-%d"))
+            date_list.append(current_date.strftime(self.pref.settings["date_format"]))
             current_date += timedelta(days=1)
         return date_list
 
@@ -120,6 +122,9 @@ class Tracker:
                 self.csv.write_file(self.tracker_file, header)
         except (csv.Error):
             print("Error reading tracker CSV file.")
+        except (ValueError):
+            print("Error parsing dates in tracker CSV file.")
+            # Prompt the user to re-enter dates, run again
 
     def read(self):
         return self.csv.read_file(self.tracker_file)

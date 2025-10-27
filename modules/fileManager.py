@@ -69,27 +69,9 @@ class File:
             start_entry.grid(row=0, column=1, padx=5, pady=3)
             end_entry.grid(row=1, column=1, padx=5, pady=3)
 
-            def save_dates():
-                start_date = start_entry.get().strip()
-                end_date = end_entry.get().strip()
-                if not datetime.strptime(start_date, "%Y-%m-%d") or not datetime.strptime(end_date, "%Y-%m-%d"):
-                    messagebox.showerror("Error", "Please enter valid dates in YYYY-MM-DD format.")
-                    return
-                if datetime.strptime(end_date, "%Y-%m-%d") < datetime.strptime(start_date, "%Y-%m-%d"):
-                    messagebox.showerror("Error", "End date cannot be before start date.")
-                    return
-                self.pref.update_project_setting("project_start_date", start_date)
-                self.pref.update_project_setting("project_end_date", end_date)
-                os.makedirs(project_dir, exist_ok=False)
-                if switch_to_file:
-                    self.set(project_dir)
-                self.initialize_file(self)
-                print(f"Project created at {project_dir}")
-                print(f"Start: {start_date}, End: {end_date}")
-                date_window.destroy()
-                
+            
 
-            tk.Button(date_window, text="Save", command=save_dates).grid(row=2, column=0, columnspan=2, pady=8)
+            tk.Button(date_window, text="Save", command=self.pref.get_dates(start_date = start_entry.get().strip(), end_date = end_entry.get().strip())).grid(row=2, column=0, columnspan=2, pady=8)
 
             # Make the window modal
             date_window.grab_set()

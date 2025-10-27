@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from apps.taskmanager import taskManagerApp
+from apps.taskmanager import taskManagerApp, taskManagerWidget
 
 from modules.settingsManager import settingsManagerWindow
 from modules.fileManager import fileManagerWindow
@@ -94,7 +94,7 @@ class HomePage:
         self.left.grid_columnconfigure(0, weight=1)
 
         # Add apps to frames
-        self.tm = taskManagerApp(self.taskViewer, self)
+        self.tm = taskManagerWidget(self.taskViewer, self)
 
         # --- Add widgets to right frame ---
 
@@ -127,8 +127,15 @@ class HomePage:
         messagebox.showinfo("File Saver", "No need for this because it saves automatically")
 
     def launch_task_manager(self):
-        # placeholder for actual code to launch task manager
-        messagebox.showinfo("Task Manager", "Task Manager Launched!")
+        parent = self
+        new_window = tk.Toplevel(parent.root)
+        new_window.title("Task Manager")
+        new_window.geometry("1200x800")
+
+        app = taskManagerApp(new_window, parent)
+        app.load()
+
+        new_window.grab_set()  # bring window to the front
 
     def launch_gantt_viewer(self):
         # placeholder for actual code to launch gantt viewer

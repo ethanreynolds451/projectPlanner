@@ -3,37 +3,23 @@ from tkinter import ttk, PhotoImage
 from PIL import Image, ImageTk  # Requires Pillow
 from tkinter import messagebox
 
-
 from resources.globalPresets import taskParameters as taskParams
 
-class taskManagerApp:
-    def __init__(self, tk_parent, parent):
-        self.root = tk_parent
+# Create new instance within each application window
+class taskManagerCore:
+    def __init__(self, parent, view="task_manager_view"):
+        self.root = parent.root
         self.pref = parent.pref
+        self.view = view
         self.file = parent.file
         self.db = parent.db
 
+    def build_table(self, parent):
+
+        self.scrollTable = parent.scrollTable
+
         self.checkbox_states = {}  # item_id -> bool
 
-        # Task list with scrollbar
-        self.scrollTable = tk.Frame(self.root)
-        self.scrollTable.grid(row=0, column=0, sticky="nsew")
-
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-
-        
-        # Buttons
-        btn_frame = tk.Frame(self.root)
-        btn_frame.grid(row=1, column=0, sticky="nsew")
-
-        tk.Button(btn_frame, text="Add Task", command=self.add_task_popup).pack(side="left")
-        tk.Button(btn_frame, text="Delete Task", command=self.delete_selected).pack(side="left")
-        tk.Button(btn_frame, text="Undo", command=self.undo_archive_task).pack(side="left")
-        tk.Button(btn_frame, text="Redo", command=self.redo_archive_task).pack(side="left")
-        tk.Button(btn_frame, text="Refresh", command=self.refresh).pack(side="left")
-
-    def build_table(self):
         checkbox_size = 15
 
         # Load checkbox images
@@ -116,9 +102,9 @@ class taskManagerApp:
         # Increment through all columns
         for column in taskParams.key.values():
             # If the column is set to be visible
-            if self.pref.settings["task_column_visible"][column]:
+            if self.pref.settings[self.view]["column_visible"][column]:
                 # Add the place and column key to their respective lists
-                places.append(self.pref.settings["task_column_order"][column])
+                places.append(self.pref.settings[self.view]["column_order"][column])
                 self.columns.append(column)
 
         # Sort the columns and order list
@@ -127,8 +113,7 @@ class taskManagerApp:
 
     def apply_column_widths(self):
         # Load saved widths
-        saved_widths = self.pref.get_setting("task_column_width") or {}
-
+        saved_widths = self.pref.get_setting(self.view)["column_width"] or {}
         for display_name in self.tree["columns"]:
             internal_key = taskParams.key.get(display_name)
             width = saved_widths.get(internal_key, 120)
@@ -142,11 +127,10 @@ class taskManagerApp:
                 width = self.tree.column(display_name)["width"]
                 new_widths[internal_key] = width
 
-        old_widths = self.pref.get_setting("task_column_width") or {}
+        old_widths = self.pref.get_setting(self.view)["column_width"] or {}
 
-        # Compare with your stored settings
         if new_widths != old_widths:
-            self.pref.settings["task_column_width"] = new_widths
+            self.pref.settings[self.view]["column_width"] = new_widths
             self.pref.save_settings()
 
     def toggle_complete_checkbox(self, event):
@@ -194,9 +178,8 @@ class taskManagerApp:
                 image=img
             )
 
-
     def add_task_popup(self):
-        win = tk.Toplevel(self.self.root)
+        win = tk.Toplevel(self.root)
         win.title("Add Task")
 
         tk.Label(win, text="Name:").grid(row=0, column=0)
@@ -247,5 +230,65 @@ class taskManagerApp:
         self.refresh() 
     
     def load(self): 
-        self.build_table()
         self.refresh()
+
+
+
+class taskManagerApp:
+    def __init__(self, tk_parent, parent, view="task_manager_view"):
+        self.root = tk_parent
+        self.pref = parent.pref
+        self.file = parent.file
+        self.db = parent.db
+        self.tm = taskManagerCore(self)
+
+    def build_app(self):
+        # Task Table (using grid)
+        self.scrollTable = tk.Frame(self.root)
+        self.scrollTable.grid(row=0, column=0, sticky="nsew")
+        self.tm.build_table(self)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+     
+        # Buttons (using pack)
+        btn_frame = tk.Frame(self.root)
+        btn_frame.grid(row=1, column=0, sticky="nsew")
+        tk.Button(btn_frame, text="Add Task", command=self.tm.add_task_popup).pack(side="left")
+        tk.Button(btn_frame, text="Delete Task", command=self.tm.delete_selected).pack(side="left")
+        tk.Button(btn_frame, text="Undo", command=self.tm.undo_archive_task).pack(side="left")
+        tk.Button(btn_frame, text="Redo", command=self.tm.redo_archive_task).pack(side="left")
+        tk.Button(btn_frame, text="Refresh", command=self.tm.refresh).pack(side="left")
+
+    def load(self):
+        self.build_app()
+        self.tm.load()
+
+
+class taskManagerWidget:
+    def __init__(self, tk_parent, parent, view="task_widget_view"):
+        self.root = tk_parent
+        self.pref = parent.pref
+        self.file = parent.file
+        self.db = parent.db
+        self.tm = taskManagerCore(self)
+
+    def build_app(self):
+        # Task Table (using grid)
+        self.scrollTable = tk.Frame(self.root)
+        self.scrollTable.grid(row=0, column=0, sticky="nsew")
+        self.tm.build_table(self)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+     
+        # Buttons (using pack)
+        btn_frame = tk.Frame(self.root)
+        btn_frame.grid(row=1, column=0, sticky="nsew")
+        tk.Button(btn_frame, text="+", command=self.tm.add_task_popup).pack(side="left")
+        tk.Button(btn_frame, text="-", command=self.tm.delete_selected).pack(side="left")
+        tk.Button(btn_frame, text="<-", command=self.tm.undo_archive_task).pack(side="left")
+        tk.Button(btn_frame, text="->", command=self.tm.redo_archive_task).pack(side="left")
+        tk.Button(btn_frame, text="load", command=self.tm.refresh).pack(side="left")
+
+    def load(self):
+        self.build_app()
+        self.tm.load()
